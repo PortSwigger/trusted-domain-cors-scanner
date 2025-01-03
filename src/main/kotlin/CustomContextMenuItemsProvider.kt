@@ -6,10 +6,11 @@ import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ThreadPoolExecutor
 import javax.swing.*
 import kotlin.concurrent.thread
 
-class CustomContextMenuItemsProvider(private val api: MontoyaApi) : ContextMenuItemsProvider {
+class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val threadPool: ThreadPoolExecutor) : ContextMenuItemsProvider {
     private var externalSubDomainLookup = false
     override fun provideMenuItems(event: ContextMenuEvent): MutableList<JMenuItem> {
         val menuItemList = ArrayList<JMenuItem>()
@@ -116,7 +117,7 @@ class CustomContextMenuItemsProvider(private val api: MontoyaApi) : ContextMenuI
                 //Run in thread to prevent UI from hanging....
                 thread {
                     // Run the scan, but only if there isn't arbitrary origin reflection. Otherwise no point!
-                    if (!checkArbitraryOriginReflection(api, selectedRequest)) {
+                    if (!checkArbitraryOriginReflection(api, selectedRequest, threadPool)) {
                         runTrustedDomainScan(textArea.text, selectedRequest)
                     }
                 }

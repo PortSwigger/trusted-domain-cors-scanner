@@ -20,7 +20,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("net.portswigger.burp.extensions:montoya-api:+")
+    implementation("net.portswigger.burp.extensions:montoya-api:2024.12")
 }
 
 tasks.jar {

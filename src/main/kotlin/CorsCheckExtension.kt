@@ -1,5 +1,8 @@
 import burp.api.montoya.BurpExtension
 import burp.api.montoya.MontoyaApi
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import javax.swing.JCheckBoxMenuItem
 import javax.swing.JMenu
 
@@ -14,7 +17,7 @@ class CorsCheckExtension : BurpExtension {
             return
         }
 
-        val name = "t0xodile's CORS Check"
+        val name = "Trusted Domain CORS Scanner"
         api.extension().setName(name)
         api.logging().logToOutput("Loaded $name")
 
@@ -38,16 +41,19 @@ class CorsCheckExtension : BurpExtension {
 
         api.userInterface().menuBar().registerMenu(topMenu)
 
+        //Create thread pool
+        val threadPool = ThreadPoolExecutor(4, 4, 60L, TimeUnit.SECONDS, LinkedBlockingQueue())
 
         //Scan checks
-        api.scanner().registerScanCheck(CorsScannerCheck(api))
+        api.scanner().registerScanCheck(CorsScannerCheck(api, threadPool))
 
         //Register context menu interface
-        api.userInterface().registerContextMenuItemsProvider(CustomContextMenuItemsProvider(api))
+        api.userInterface().registerContextMenuItemsProvider(CustomContextMenuItemsProvider(api, threadPool))
 
         //Register unloading handler
         api.extension().registerUnloadingHandler {
             unloaded = true
+            threadPool.shutdown()
 
             api.logging().logToOutput("Unloading Extension...")
         }

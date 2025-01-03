@@ -5,6 +5,7 @@ import burp.api.montoya.http.message.requests.HttpRequest
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.ThreadPoolExecutor
 
 fun randSting(length: Int): String {
     val chars = "abcdefghijklmnopqrstucwxyz"
@@ -25,13 +26,12 @@ fun getMarkerFromRequest(requestResponse: HttpRequestResponse, match: String): M
     return marker
 }
 
-fun checkArbitraryOriginReflection(api: MontoyaApi, selectedRequest: HttpRequest): Boolean {
+fun checkArbitraryOriginReflection(api: MontoyaApi, selectedRequest: HttpRequest, threadPool: ThreadPoolExecutor): Boolean {
     val attackerDomain = randSting(12) + ".com"
     //Check if we have arbitrary origin reflection. If we do, just give-up burp will handle this for us and we don't want to report all of these bypasses....
     val arbitraryOriginCheckRequest = selectedRequest.withHeader("Origin", attackerDomain)
 
-    val executor = Executors.newSingleThreadExecutor()
-    val future: Future<Boolean> = executor.submit(Callable {
+    val future: Future<Boolean> = threadPool.submit(Callable {
         try {
             val arbitraryOrigincheckRequestResponse = api.http().sendRequest(arbitraryOriginCheckRequest)
             if (arbitraryOrigincheckRequestResponse.response()
@@ -51,7 +51,6 @@ fun checkArbitraryOriginReflection(api: MontoyaApi, selectedRequest: HttpRequest
     })
 
     val result = future.get()
-    executor.shutdown()
     return result
 }
 

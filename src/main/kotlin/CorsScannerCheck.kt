@@ -5,8 +5,9 @@ import burp.api.montoya.scanner.ConsolidationAction
 import burp.api.montoya.scanner.ScanCheck
 import burp.api.montoya.scanner.audit.insertionpoint.AuditInsertionPoint
 import burp.api.montoya.scanner.audit.issues.AuditIssue
+import java.util.concurrent.ThreadPoolExecutor
 
-class CorsScannerCheck(private val api: MontoyaApi) : ScanCheck {
+class CorsScannerCheck(private val api: MontoyaApi, private val threadPool: ThreadPoolExecutor) : ScanCheck {
     private val auditedRequests: MutableSet<String> = HashSet()
     override fun activeAudit(baseRequestResponse: HttpRequestResponse, auditInsertionPoint: AuditInsertionPoint): AuditResult {
         /*
@@ -34,7 +35,7 @@ class CorsScannerCheck(private val api: MontoyaApi) : ScanCheck {
         auditedRequests.add(requestHash)
 
         //Check for arbitrary reflection and exit if there is (burp will handle this for us)
-        if (checkArbitraryOriginReflection(api, baseRequestResponse.request())) {
+        if (checkArbitraryOriginReflection(api, baseRequestResponse.request(), threadPool)) {
             return AuditResult.auditResult()
         }
 
