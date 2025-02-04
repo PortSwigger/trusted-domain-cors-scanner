@@ -21,6 +21,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("net.portswigger.burp.extensions:montoya-api:2024.12")
+    implementation("com.google.guava:guava:32.1.3-jre")
 }
 
 tasks.jar {

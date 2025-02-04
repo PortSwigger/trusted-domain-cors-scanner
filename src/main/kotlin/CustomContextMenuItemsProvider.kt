@@ -9,6 +9,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ThreadPoolExecutor
 import javax.swing.*
 import kotlin.concurrent.thread
+import com.google.common.net.InternetDomainName
 
 class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val threadPool: ThreadPoolExecutor) : ContextMenuItemsProvider {
     private var externalSubDomainLookup = false
@@ -64,7 +65,7 @@ class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val th
             externalLookupCheckBox.isSelected = false  // Off by default
 
             // Add a tooltip to the checkbox
-            externalLookupCheckBox.toolTipText = "WARNING: When enabled, leaks the domains included in the list below to 'columbus.elmasy.com'."
+            externalLookupCheckBox.toolTipText = "WARNING: When enabled, leaks the domains included in the list below to 'subdomains.thomas-stacey.workers.dev' and 'dns.projectdiscovery.io'."
 
 
             // Initialize externalSubDomainLookup based on the initial state of the checkbox
@@ -157,13 +158,16 @@ class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val th
                     //Create a list of subdomains for this specific parent domain
                     val subDomainsForParent = mutableListOf<String>()
 
+                    val topPrivateDomain = InternetDomainName.from(domain).topPrivateDomain().toString()
+
                     //Add the OG parent domain in case it trusts itself!
-                    subDomainsForParent.add(domain)
+                    subDomainsForParent.add(domain.replace(".$topPrivateDomain", ""))
 
                     //Check if enabled and also don't try to do a lookup for localhost and similar...
                     if (externalSubDomainLookup && domain !in defaultTrustedDomains) {
-                        api.logging().logToOutput("Looking up subdomains for: $domain")
-                        val url = "https://columbus.elmasy.com/api/lookup/$domain"
+
+                        api.logging().logToOutput("Looking up subdomains for: $topPrivateDomain")
+                        val url = "https://subdomains.thomas-stacey.workers.dev/?domain=$topPrivateDomain"
                         val apiResp = api.http().sendRequest(HttpRequest.httpRequestFromUrl(url).withHeader("Accept", "text/plain"))
 
 
@@ -178,7 +182,7 @@ class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val th
 
                     //Add the list of subdomains to the map with the parent domain as they key
                     synchronized(allDomains) {
-                        allDomains[domain] = subDomainsForParent
+                        allDomains[topPrivateDomain] = subDomainsForParent
                     }
 
                 } catch (e: Exception) {
