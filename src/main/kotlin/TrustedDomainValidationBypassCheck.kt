@@ -66,6 +66,11 @@ object TrustedDomainValidationBypassCheck {
             val acacHeader = "true"
             val vulnerableOrigin = checkRequest.headerValue("Origin")
 
+            // Check that we actually have a response, if not, skip to next entry
+            if (!checkRequestResponse.hasResponse()) {
+                continue
+            }
+
             if (checkRequestResponse.response().headerValue("Access-Control-Allow-Credentials") != acacHeader) {
                 continue
             }
