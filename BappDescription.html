@@ -1,0 +1,13 @@
+<p>Trusted Domain CORS Scanner introduces more robust scan checks for Permissive CORS issues including bypasses from PortSwigger's <a href="https://portswigger.net/web-security/ssrf/url-validation-bypass-cheat-sheet">URL validation bypass cheat sheet</a> and the research paper, <a href="https://corben.io/blog/18-6-16-advanced-cors-techniques">Advanced CORS Exploitation Techniques by Corben Leo</a>. Additionally, it implements a "trusted domain scanner" which allows you to discover and exploit hidden CORS attack surfaces.<p>
+
+<p>Often applications implement cross-origin resource sharing for a specific domain but not for themselves. This extension allows you to check for other trusted domains automatically and then test each of those trusted domains for URL validation bypasses in an attempt to trick the application into trusting arbitrary origins.</p>
+
+<h2>Usage</h2>
+
+<p>The extension includes an active scan check that will run once for each request sent to the scanner. This can be enabled / disabled via the main menu.</p>
+
+<p>By right-clicking inside of any request editor, you can open the trusted domain scanner.</p>
+
+<p>The trusted domain scanner will be pre-populated with the domain of the request you are testing. You may add additional domains that may be trusted to this list (it is recommended to include all in-scope domains from your test). You may then also enable external subdomain lookup, which will automatically include all subdomains for each of the provided domains. This is disabled by default because it uses https://columbus.elmasy.com/.</p>
+
+<p>Once configured, you can run the trusted domain scan, which will first check if any of the domains included in the list are trusted by the application's CORS policy. It will then run URL validation bypass checks and report any issues that would result in vulnerabilities.</p>
