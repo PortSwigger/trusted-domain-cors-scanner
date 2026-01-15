@@ -2,12 +2,12 @@ Uuid: c257bcb0b6254a578535edb2dcee87d0
 ExtensionType: 1
 Name: Trusted Domain CORS Scanner
 RepoName: trusted-domain-cors-scanner
-ScreenVersion: 1.0.0
-SerialVersion: 1
+ScreenVersion: 1.1.0
+SerialVersion: 2
 MinPlatformVersion: 18
 ProOnly: True
 Author: Thomas Stacey
 ShortDescription: Provides additional scan checks for CORS vulnerabilities.
-EntryPoint: build/libs/CheckCors-1.0.0.jar
+EntryPoint: CheckCors-1.0.0.jar
 BuildCommand: ./gradlew jar
 SupportedProducts: Pro
