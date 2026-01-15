@@ -2,6 +2,8 @@ import burp.api.montoya.MontoyaApi
 import burp.api.montoya.http.message.requests.HttpRequest
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider
+import burp.api.montoya.utilities.json.JsonNode
+import com.google.common.net.InternetDomainName
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
@@ -9,7 +11,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ThreadPoolExecutor
 import javax.swing.*
 import kotlin.concurrent.thread
-import com.google.common.net.InternetDomainName
+
 
 class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val threadPool: ThreadPoolExecutor) : ContextMenuItemsProvider {
     private var externalSubDomainLookup = false
@@ -65,7 +67,7 @@ class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val th
             externalLookupCheckBox.isSelected = false  // Off by default
 
             // Add a tooltip to the checkbox
-            externalLookupCheckBox.toolTipText = "WARNING: When enabled, leaks the domains included in the list below to 'subdomains.thomas-stacey.workers.dev' and 'dns.projectdiscovery.io'."
+            externalLookupCheckBox.toolTipText = "WARNING: When enabled, leaks the domains included in the list below to 'https://ip.thc.org/docs/API/subdomain-lookup'."
 
 
             // Initialize externalSubDomainLookup based on the initial state of the checkbox
@@ -153,6 +155,13 @@ class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val th
             if (CorsCheckExtension.unloaded) {
                 break
             }
+
+            // Don't do lookups for things like "localhost"
+            if (domain in defaultTrustedDomains) {
+                latch.countDown() // Decrement because we are "finishing" with this item
+                continue
+            }
+
             thread {
                 try {
                     //Create a list of subdomains for this specific parent domain
@@ -161,22 +170,36 @@ class CustomContextMenuItemsProvider(private val api: MontoyaApi, private val th
                     val topPrivateDomain = InternetDomainName.from(domain).topPrivateDomain().toString()
 
                     //Add the OG parent domain in case it trusts itself!
-                    subDomainsForParent.add(domain.replace(".$topPrivateDomain", ""))
+                    subDomainsForParent.add(domain.removeSuffix(".$topPrivateDomain"))
 
-                    //Check if enabled and also don't try to do a lookup for localhost and similar...
-                    if (externalSubDomainLookup && domain !in defaultTrustedDomains) {
+                    //Check if enabled
+                    if (externalSubDomainLookup) {
 
                         api.logging().logToOutput("Looking up subdomains for: $topPrivateDomain")
-                        val url = "https://subdomains.thomas-stacey.workers.dev/?domain=$topPrivateDomain"
-                        val apiResp = api.http().sendRequest(HttpRequest.httpRequestFromUrl(url).withHeader("Accept", "text/plain"))
+                        val url = "https://ip.thc.org/api/v1/lookup/subdomains"
+
+                        val apiResp = api.http().sendRequest(HttpRequest.httpRequestFromUrl(url)
+                            .withMethod("POST")
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("{\"domain\":\"$topPrivateDomain\",\"limit\":0}")
+                        )
 
 
                         //Only add remaining domains to list if we get a successful response!
                         if (apiResp.response().statusCode().toInt() == 200) {
-                            val subDomainsList = apiResp.response().bodyToString().split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+                            if (api.utilities().jsonUtils().read(apiResp.response().bodyToString(), "matching_records").toInt() != 0) {
+                                val domains = api.utilities().jsonUtils().read(apiResp.response().bodyToString(), "domains")
+                                val something = JsonNode.jsonNode(domains)
 
-                            //Add the remaining subDomains to the big list
-                            subDomainsForParent.addAll(subDomainsList)
+                                val array = something.asArray()
+
+                                for (test in array.asList()) {
+                                    subDomainsForParent.add(api.utilities().jsonUtils().read(test.toJsonString(), "domain").replace("\"", "").removeSuffix(".$topPrivateDomain"));
+                                }
+
+                            } else {
+                                api.logging().logToOutput("No subdomains found for $topPrivateDomain")
+                            }
                         }
                     }
 

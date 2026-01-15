@@ -5,6 +5,7 @@ import burp.api.montoya.scanner.ConsolidationAction
 import burp.api.montoya.scanner.ScanCheck
 import burp.api.montoya.scanner.audit.insertionpoint.AuditInsertionPoint
 import burp.api.montoya.scanner.audit.issues.AuditIssue
+import java.util.*
 import java.util.concurrent.ThreadPoolExecutor
 
 class CorsScannerCheck(private val api: MontoyaApi, private val threadPool: ThreadPoolExecutor) : ScanCheck {
